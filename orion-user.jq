@@ -1,0 +1,1 @@
+.Properties."general/settings/generalSettings" = "{\"desktopSelectionPolicy\":true,\"filteredResources\":\".git, .DS_Store\",\"enableEditorTabs\":true,\"maximumEditorTabs\":0,\"enableFileCreationAtRoot\":true,\"enableFolderCreationAtRoot\":true,\"enableProjectCreation\":false,\"enableLinkProjectCreation\":false,\"enableRefreshButton\":true,\"enableDebugger\":false}"

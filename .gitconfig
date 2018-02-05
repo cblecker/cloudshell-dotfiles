@@ -1,0 +1,44 @@
+[user]
+	name = Christoph Blecker
+	email = admin@toph.ca
+	useConfigOnly = true
+[github]
+	user = cblecker
+[alias]
+	last = log -1 HEAD
+	hist = log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short
+	root = rev-parse --show-toplevel
+	sync = "!git fetch --prune --all; git pull --stat --rebase upstream master; git push $(git config --get branch.master.remote) master"
+	patch = --no-pager diff --no-color
+	rebase-branch = "!git rebase -i $(git merge-base --fork-point master)"
+[filter "media"]
+	required = true
+	clean = git media clean %f
+	smudge = git media smudge %f
+[filter "hawser"]
+	clean = git hawser clean %f
+	smudge = git hawser smudge %f
+	required = true
+[filter "lfs"]
+	clean = git lfs clean %f
+	smudge = git lfs smudge %f
+	required = true
+[push]
+	default = current
+[hub]
+	protocol = ssh
+[http]
+	cookiefile = ~/.gitcookies
+[merge]
+	stat = true
+[core]
+	pager = diff-so-fancy | less --tabs=4 -RFX
+[http "https://gopkg.in"]
+	followRedirects = true
+[diff]
+	tool = opendiff
+[diff-so-fancy]
+	first-run = false
+[branch]
+	autosetuprebase = always
+	autosetupmerge = always

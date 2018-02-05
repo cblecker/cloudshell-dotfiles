@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Get SSL certificate for a given domain
+getcert() {
+  if [ -z "${1}" ]; then
+    echo "ERROR: No domain specified."
+    return 1
+  fi
+
+  local domain="${1}"
+  echo "Testing ${domain} ..."
+  echo ""; # newline
+
+  local tmp
+  tmp=$(echo -e "GET / HTTP/1.0\\nEOT" \
+    | openssl s_client -connect "${domain}:443" -servername "${domain}" 2>&1)
+
+  if [[ "${tmp}" = *"-----BEGIN CERTIFICATE-----"* ]]; then
+    local cert
+    cert=$(echo "${tmp}" \
+      | openssl x509)
+    echo "${cert}"
+    return 0
+  else
+    echo "ERROR: Certificate not found."
+    return 1
+  fi
+}
+
+# Show all the names (CNs and SANs) listed in the SSL certificate
+# for a given domain
+getcertnames() {
+  if [ -z "${1}" ]; then
+    echo "ERROR: No domain specified."
+    return 1
+  fi
+
+  local domain="${1}"
+
+  echo "Testing ${domain} ..."
+  echo ""; # newline
+
+  local tmp
+  tmp=$(getcert "${domain}")
+
+  if [[ "${tmp}" = *"-----BEGIN CERTIFICATE-----"* ]]; then
+    local certText
+    certText=$(echo "${tmp}" \
+      | openssl x509 -text -certopt "no_header, no_serial, no_version, \
+      no_signame, no_validity, no_issuer, no_pubkey, no_sigdump, no_aux")
+    echo "Common Name:"
+    echo ""; # newline
+    echo "${certText}" | grep "Subject:" | sed -e "s/^.*CN=//"
+    echo ""; # newline
+    echo "Subject Alternative Name(s):"
+    echo ""; # newline
+    echo "${certText}" | grep -A 1 "Subject Alternative Name:" \
+      | sed -e "2s/DNS://g" -e "s/ //g" | tr "," "\\n" | tail -n +2
+    return 0
+  else
+    echo "ERROR: Certificate not found."
+    return 1
+  fi
+}
+
+# Show all the SSL certificate details for a given domain
+getcertinfo() {
+  if [ -z "${1}" ]; then
+    echo "ERROR: No domain specified."
+    return 1
+  fi
+
+  local domain="${1}"
+  echo "Testing ${domain} ..."
+  echo ""; # newline
+
+  local tmp
+  tmp=$(getcert "${domain}")
+
+  if [[ "${tmp}" = *"-----BEGIN CERTIFICATE-----"* ]]; then
+    local certText
+    certText=$(echo "${tmp}" \
+      | openssl x509 -text -noout)
+    echo "${certText}"
+    return 0
+  else
+    echo "ERROR: Certificate not found."
+    return 1
+  fi
+}
+
+# Get colours in manual pages
+man() {
+  env \
+    LESS_TERMCAP_mb="$(printf "\\e[1;31m")" \
+    LESS_TERMCAP_md="$(printf "\\e[1;31m")" \
+    LESS_TERMCAP_me="$(printf "\\e[0m")" \
+    LESS_TERMCAP_se="$(printf "\\e[0m")" \
+    LESS_TERMCAP_so="$(printf "\\e[1;44;33m")" \
+    LESS_TERMCAP_ue="$(printf "\\e[0m")" \
+    LESS_TERMCAP_us="$(printf "\\e[1;32m")" \
+    man "$@"
+}
+
+# Start an HTTP server from a directory, optionally specifying the port
+httpserver() {
+  local port="${1:-8000}"
+  sleep 1 && open "http://localhost:${port}/" &
+  # Set the default Content-Type to `text/plain` instead of `application/octet-stream`
+  # And serve everything as UTF-8 (although not technically correct, this doesn’t break anything for binary files)
+  python -c $'import SimpleHTTPServer;\nmap = SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map;\nmap[""] = "text/plain";\nfor key, value in map.items():\n\tmap[key] = value + ";charset=UTF-8";\nSimpleHTTPServer.test();' "$port"
+}
+
+websha() {
+  local filename
+  # shellcheck disable=SC1117
+  filename="${1//*\//}"
+  wget -O "${TMPDIR}${filename}" -q "${1}"
+  shasum -a 256 "${TMPDIR}${filename}" | awk '{print $1}'
+  rm "${TMPDIR}${filename}"
+}
+
+webexists() {
+  until wget -S --spider "$1"
+  do
+    sleep 10
+  done
+}
+
+function yaml2json() {
+  ruby -ryaml -rjson -e \
+    'puts JSON.pretty_generate(YAML.load(ARGF))' "$@"
+}
